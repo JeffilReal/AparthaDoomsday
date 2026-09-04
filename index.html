@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Countdown</title>
+    <title>Apartha Countdown</title>
 
     <style>
         body {
@@ -12,10 +12,9 @@
             background: black;
             color: white;
             font-family: Arial, sans-serif;
-
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
         }
 
         #countdown {
@@ -33,38 +32,68 @@
 
 <body>
 
-    <div id="countdown"></div>
+    <div id="countdown">Loading...</div>
 
     <script>
-        // January 1, 2027 at 00:00:00 Tehran time.
-        // Tehran is UTC+3:30.
-        const target = new Date("2027-01-01T00:00:00+03:30").getTime();
+        const countdown = document.getElementById("countdown");
 
-        function countdown() {
-            const now = Date.now();
-            const difference = target - now;
+        // The countdown ends at midnight in Tehran
+        const endTime = new Date("2027-01-01T00:00:00+03:30").getTime();
 
-            if (difference <= 0) {
-                document.getElementById("countdown").textContent = "00:00:00:00";
+        let clockOffset = 0;
+
+        async function getTime() {
+            try {
+                const before = Date.now();
+
+                const result = await fetch(
+                    "https://worldtimeapi.org/api/timezone/Etc/UTC"
+                );
+
+                const data = await result.json();
+                const after = Date.now();
+
+                const serverTime = new Date(data.utc_datetime).getTime();
+                clockOffset = serverTime - ((before + after) / 2);
+            } catch (error) {
+                clockOffset = 0;
+            }
+        }
+
+        function update() {
+            let left = endTime - (Date.now() + clockOffset);
+
+            if (left <= 0) {
+                countdown.textContent = "00:00:00:00";
                 return;
             }
 
-            const totalSeconds = Math.floor(difference / 1000);
+            let totalSeconds = Math.floor(left / 1000);
 
             const days = Math.floor(totalSeconds / 86400);
-            const hours = Math.floor((totalSeconds % 86400) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            totalSeconds %= 86400;
+
+            const hours = Math.floor(totalSeconds / 3600);
+            totalSeconds %= 3600;
+
+            const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
 
-            document.getElementById("countdown").textContent =
-                `${String(days).padStart(2, "0")}:` +
-                `${String(hours).padStart(2, "0")}:` +
-                `${String(minutes).padStart(2, "0")}:` +
-                `${String(seconds).padStart(2, "0")}`;
+            countdown.textContent =
+                String(days).padStart(2, "0") + ":" +
+                String(hours).padStart(2, "0") + ":" +
+                String(minutes).padStart(2, "0") + ":" +
+                String(seconds).padStart(2, "0");
         }
 
-        countdown();
-        setInterval(countdown, 1000);
+        async function start() {
+            await getTime();
+            update();
+
+            setInterval(update, 1000);
+        }
+
+        start();
     </script>
 
 </body>
